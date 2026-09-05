@@ -1,0 +1,893 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Horizon Case</title>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
+    body { background: #070b14; font-family: 'Segoe UI', system-ui, sans-serif; min-height: 100vh; padding: 12px; color: #eef3ff; display: flex; justify-content: center; align-items: center; }
+    .app { max-width: 480px; width: 100%; margin: 0 auto; background: rgba(13,20,36,0.85); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-radius: 48px; padding: 22px 18px 18px; box-shadow: 0 30px 80px rgba(0,0,0,0.9), inset 0 0 0 1px rgba(90,170,255,0.06); border: 1px solid rgba(80,160,255,0.03); }
+    .login-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(8,11,26,0.95); backdrop-filter: blur(16px); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+    .login-overlay.hidden { display: none; }
+    .login-box { background: rgba(20,26,43,0.95); padding: 2.5rem 2rem; border-radius: 2.5rem; border: 1px solid rgba(79,126,255,0.15); max-width: 400px; width: 90%; text-align: center; box-shadow: 0 0 80px rgba(79,126,255,0.05); animation: fadeIn 0.4s ease; }
+    @keyframes fadeIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+    .login-box h1 { color: #b7c9ff; font-weight: 300; letter-spacing: 6px; font-size: 2rem; text-shadow: 0 0 40px rgba(79,126,255,0.15); }
+    .login-box .sub { color: #7a8fc9; font-size: 0.85rem; margin: 0.3rem 0 1.5rem; }
+    .login-box input { width: 100%; padding: 0.9rem 1.2rem; border-radius: 60px; border: 1px solid rgba(46,63,106,0.5); background: rgba(15,20,34,0.8); color: #d6e5ff; font-size: 1.1rem; outline: none; transition: 0.3s; text-align: center; font-family: inherit; }
+    .login-box input:focus { border-color: #4f7eff; box-shadow: 0 0 30px rgba(79,126,255,0.1); }
+    .login-box input::placeholder { color: #5a6f9a; }
+    .login-box button { margin-top: 1.2rem; width: 100%; padding: 0.9rem; border-radius: 60px; border: none; background: linear-gradient(135deg, #4f7eff, #2a4a7a); color: white; font-size: 1.2rem; font-weight: 700; cursor: pointer; transition: 0.2s; text-shadow: 0 2px 0 rgba(0,0,0,0.2); box-shadow: 0 4px 20px rgba(79,126,255,0.2); font-family: inherit; }
+    .login-box button:active { transform: scale(0.96); }
+    .login-box .error { color: #ff6b7a; font-size: 0.8rem; margin-top: 0.5rem; height: 1.2rem; }
+    .header { display: flex; justify-content: space-between; align-items: center; padding-bottom: 14px; border-bottom: 1px solid rgba(80,160,255,0.04); margin-bottom: 14px; }
+    .header h1 { font-size: 22px; font-weight: 700; letter-spacing: 1px; background: linear-gradient(135deg, #a0d0ff, #4a8ecf, #a0d0ff, #e0f0ff); background-size: 300% 300%; -webkit-background-clip: text; -webkit-text-fill-color: transparent; animation: iceGlow 4s ease-in-out infinite; text-shadow: 0 0 40px rgba(80,180,255,0.08); cursor: pointer; }
+    @keyframes iceGlow { 0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; } }
+    .header .player-name { color: #7a8fc9; font-size: 0.8rem; background: rgba(15,20,34,0.6); padding: 0.3rem 1rem; border-radius: 30px; border: 1px solid rgba(46,63,106,0.3); }
+    .header .player-name span { color: #d6e8ff; font-weight: 600; }
+    .header .stars { background: rgba(20,45,80,0.5); backdrop-filter: blur(8px); padding: 6px 18px; border-radius: 60px; font-weight: 700; font-size: 16px; color: #f5c542; border: 1px solid rgba(245,197,66,0.06); display: flex; align-items: center; gap: 6px; box-shadow: 0 0 40px rgba(245,197,66,0.02); }
+    .balance-row { display: flex; align-items: center; gap: 12px; background: rgba(12,20,40,0.5); backdrop-filter: blur(12px); border-radius: 60px; padding: 8px 18px; margin-bottom: 20px; border: 1px solid rgba(80,160,255,0.04); flex-wrap: wrap; }
+    .balance-row .stars-big { font-size: 26px; font-weight: 700; color: #f5c542; display: flex; align-items: center; gap: 4px; }
+    .balance-row .stars-big span { font-size: 18px; font-weight: 400; color: #7a8fc9; margin-left: 2px; }
+    .cases-grid { display: grid; grid-template-columns: 1fr; gap: 14px; margin-bottom: 20px; max-width: 280px; margin-left: auto; margin-right: auto; }
+    .case-card { background: rgba(17,27,46,0.6); backdrop-filter: blur(12px); border-radius: 32px; padding: 24px 10px 20px; border: 1px solid rgba(80,160,255,0.03); text-align: center; cursor: pointer; transition: all 0.2s ease; position: relative; box-shadow: 0 12px 40px rgba(0,0,0,0.4); }
+    .case-card:active { transform: scale(0.95); border-color: rgba(80,160,255,0.08); }
+    .case-card .case-icon-img { height: 72px; width: 72px; display: block; margin: 0 auto 8px; filter: drop-shadow(0 0 30px rgba(100,160,255,0.04)); }
+    .case-card .case-name { font-size: 18px; font-weight: 700; color: #d6e8ff; margin-bottom: 4px; }
+    .case-card .case-price { font-size: 16px; font-weight: 700; color: #f5c542; margin-top: 8px; background: rgba(20,50,100,0.15); padding: 4px 18px; border-radius: 60px; display: inline-block; border: 1px solid rgba(245,197,66,0.06); backdrop-filter: blur(4px); }
+    .case-card .case-price img { height: 16px; width: 16px; vertical-align: middle; display: inline-block; }
+    .case-card .promo-badge { position: absolute; top: 12px; right: 12px; background: linear-gradient(135deg, #f5c542, #e6a800); color: #0a0e1a; font-size: 9px; font-weight: 800; padding: 2px 12px; border-radius: 40px; text-transform: uppercase; letter-spacing: 0.5px; box-shadow: 0 0 40px rgba(245,197,66,0.06); }
+    .star-icon { height: 18px; width: 18px; vertical-align: middle; display: inline-block; }
+    .star-icon-sm { height: 16px; width: 16px; vertical-align: middle; display: inline-block; }
+    .case-page { display: none; animation: fadeIn 0.3s ease; }
+    .case-page.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .case-page .back-btn { background: transparent; border: none; color: #6a80b0; font-size: 14px; font-weight: 600; cursor: pointer; padding: 6px 0; font-family: inherit; display: flex; align-items: center; gap: 6px; transition: 0.15s; margin-bottom: 6px; }
+    .case-page .back-btn:active { transform: scale(0.94); color: #a0c0ff; }
+    .case-page .case-title { text-align: center; font-size: 24px; font-weight: 700; margin-bottom: 6px; color: #d6e8ff; }
+    .case-page .case-title .icon-img { height: 72px; width: 72px; display: block; margin: 0 auto 2px; }
+    .promo-area { background: rgba(12,20,40,0.5); backdrop-filter: blur(12px); border-radius: 60px; padding: 8px 14px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 14px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .promo-area input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(80,160,255,0.04); border-radius: 40px; padding: 10px 18px; color: #e8edff; font-size: 14px; outline: none; font-family: inherit; min-width: 120px; }
+    .promo-area input::placeholder { color: #4a5f80; }
+    .promo-area input:focus { border-color: rgba(80,160,255,0.08); }
+    .promo-area .promo-btn { background: linear-gradient(135deg, #f5c542, #e6a800); border: none; padding: 10px 26px; border-radius: 60px; color: #0a0e1a; font-weight: 700; font-size: 14px; cursor: pointer; transition: 0.15s; font-family: inherit; box-shadow: 0 0 40px rgba(245,197,66,0.03); }
+    .promo-area .promo-btn:active { transform: scale(0.94); }
+    .promo-area .promo-btn:disabled { opacity: 0.4; pointer-events: none; }
+    .promo-status { font-size: 13px; color: #6a80b0; width: 100%; text-align: center; padding-top: 4px; }
+    .promo-status.success { color: #5abf6a; }
+    .promo-status.error { color: #ff6b6b; }
+    .slot-machine { background: rgba(8,14,30,0.5); backdrop-filter: blur(12px); border-radius: 32px; padding: 24px 16px; border: 1px solid rgba(80,160,255,0.04); margin: 10px 0 14px; text-align: center; min-height: 100px; display: flex; flex-direction: column; align-items: center; justify-content: center; transition: border-color 0.3s; box-shadow: inset 0 0 80px rgba(0,0,0,0.3); }
+    .slot-machine .spin-text { font-size: 34px; font-weight: 900; color: #f5c542; text-shadow: 0 0 60px rgba(245,197,66,0.03); min-height: 48px; display: flex; align-items: center; gap: 4px; justify-content: center; }
+    .slot-machine .spin-sub { font-size: 14px; color: #6a80b0; margin-top: 2px; }
+    .slot-machine .spin-rarity { font-size: 14px; font-weight: 600; padding: 4px 24px; border-radius: 60px; background: rgba(255,255,255,0.02); margin-top: 4px; }
+    .slot-machine.spinning .spin-text { animation: blink 0.15s infinite alternate; }
+    @keyframes blink { 0% { opacity: 0.2; transform: scale(0.95); } 100% { opacity: 1; transform: scale(1.05); } }
+    .rarity-common { color: #6a8aaf; }
+    .rarity-uncommon { color: #5abf6a; }
+    .rarity-rare { color: #3a8aff; }
+    .rarity-epic { color: #b06af0; }
+    .rarity-legendary { color: #f0a030; }
+    .rarity-mythic { color: #ff4060; }
+    .open-btn { background: linear-gradient(135deg, #2a5a9a, #1a3a6a); border: none; padding: 16px; border-radius: 60px; color: white; font-weight: 700; font-size: 18px; cursor: pointer; transition: 0.06s; box-shadow: 0 8px 0 #0b1a30, 0 8px 50px rgba(40,100,200,0.03); width: 100%; font-family: inherit; margin-bottom: 14px; border: 1px solid rgba(80,160,255,0.04); }
+    .open-btn:active { transform: scale(0.94); box-shadow: 0 2px 0 #0b1a30; }
+    .open-btn:disabled { opacity: 0.4; pointer-events: none; }
+    .main-prize { background: rgba(12,20,40,0.5); backdrop-filter: blur(12px); border-radius: 28px; padding: 14px 20px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .main-prize .label { color: #6a80b0; font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
+    .main-prize .prize-lottie { width: 80px; height: 80px; pointer-events: none; margin: 0 auto; }
+    .main-prize .prize-lottie svg { width: 100%; height: 100%; }
+    .main-prize .prize-stars { color: #f5c542; font-weight: 700; font-size: 18px; display: flex; align-items: center; gap: 4px; }
+    .prizes-list { background: rgba(12,20,40,0.4); backdrop-filter: blur(12px); border-radius: 28px; padding: 10px 20px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 8px; }
+    .prizes-list .prize-row { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid rgba(80,160,255,0.02); font-size: 14px; }
+    .prizes-list .prize-row:last-child { border-bottom: none; }
+    .prizes-list .prize-row .p-name { color: #8ba0dd; }
+    .prizes-list .prize-row .p-stars { color: #f5c542; font-weight: 700; display: flex; align-items: center; gap: 4px; }
+    .profile-header { background: rgba(12,20,40,0.5); backdrop-filter: blur(12px); border-radius: 28px; padding: 14px 20px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    .profile-header .profile-stars { font-size: 24px; font-weight: 700; color: #f5c542; display: flex; align-items: center; gap: 8px; }
+    .profile-header .profile-stars span { font-size: 16px; font-weight: 400; color: #7a8fc9; }
+    .profile-tabs { display: flex; gap: 4px; background: rgba(8,14,30,0.5); border-radius: 60px; padding: 4px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 14px; }
+    .profile-tabs button { flex: 1; padding: 8px 0; border: none; border-radius: 30px; background: transparent; color: #4a5f80; font-weight: 600; font-size: 13px; cursor: pointer; transition: 0.15s; font-family: inherit; }
+    .profile-tabs button.active { color: #d6e8ff; background: rgba(40,80,160,0.12); }
+    .profile-tabs button:active { transform: scale(0.94); }
+    .profile-tabs button.disabled { opacity: 0.4; pointer-events: none; }
+    .profile-rank { color: #6a80b0; font-size: 14px; text-align: center; margin-bottom: 10px; }
+    .profile-rank span { color: #f5c542; font-weight: 700; }
+    .profile-prizes { background: rgba(12,20,40,0.4); backdrop-filter: blur(12px); border-radius: 28px; padding: 14px 20px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 8px; text-align: center; color: #6a80b0; font-size: 14px; }
+    .profile-prizes .prize-item { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid rgba(80,160,255,0.02); color: #d6e8ff; }
+    .profile-prizes .prize-item:last-child { border-bottom: none; }
+    .profile-prizes .prize-item .icon { font-size: 24px; }
+    .profile-prizes .prize-item .name { flex: 1; margin-left: 10px; }
+    .profile-prizes .prize-item .stars { color: #f5c542; font-weight: 700; }
+    .profile-prizes .empty { padding: 16px 0; color: #3d4e7a; }
+    .admin-panel { margin-top: 14px; padding: 16px; border-radius: 28px; background: rgba(8,14,30,0.85); backdrop-filter: blur(20px); border: 1px solid rgba(255,80,40,0.1); display: none; }
+    .admin-panel.open { display: block; }
+    .admin-panel h3 { color: #ff8a6a; font-size: 14px; font-weight: 700; letter-spacing: 1px; margin-bottom: 12px; text-align: center; }
+    .admin-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-bottom: 8px; }
+    .admin-row label { color: #6a80b0; font-size: 12px; min-width: 60px; }
+    .admin-row input { flex: 1; background: rgba(0,0,0,0.3); border: 1px solid rgba(80,160,255,0.04); border-radius: 40px; padding: 6px 14px; color: #e8edff; font-size: 13px; outline: none; font-family: inherit; min-width: 80px; }
+    .admin-row input:focus { border-color: rgba(80,160,255,0.1); }
+    .admin-row button { background: rgba(40,80,160,0.2); border: 1px solid rgba(80,160,255,0.04); padding: 6px 16px; border-radius: 40px; color: #b0d0ff; font-weight: 600; font-size: 12px; cursor: pointer; transition: 0.15s; font-family: inherit; }
+    .admin-row button:active { transform: scale(0.94); }
+    .admin-row button.admin-danger { background: rgba(80,30,30,0.3); border-color: rgba(255,80,40,0.1); color: #ff8a6a; }
+    .admin-row button.admin-success { background: rgba(30,80,40,0.3); border-color: rgba(80,255,150,0.05); color: #6bcb77; }
+    .admin-status { font-size: 12px; color: #6a80b0; margin-top: 4px; text-align: center; min-height: 20px; }
+    .admin-status.success { color: #6bcb77; }
+    .admin-status.error { color: #ff6b6b; }
+    .bottom-nav { display: flex; justify-content: space-around; background: rgba(8,14,30,0.5); backdrop-filter: blur(12px); border-radius: 60px; padding: 6px 4px; border: 1px solid rgba(80,160,255,0.04); margin-top: 12px; }
+    .bottom-nav button { background: transparent; border: none; color: #4a5f80; font-weight: 600; font-size: 12px; padding: 8px 0; flex: 1; cursor: pointer; transition: 0.15s; border-radius: 30px; font-family: inherit; }
+    .bottom-nav button.active { color: #d6e8ff; background: rgba(40,80,160,0.12); }
+    .bottom-nav button:active { transform: scale(0.94); }
+    .tab { display: none; }
+    .tab.active { display: block; }
+    .placeholder { text-align: center; padding: 40px 16px; color: #3d4e7a; }
+    .placeholder .big-icon { font-size: 48px; display: block; margin-bottom: 8px; opacity: 0.3; }
+    .placeholder div { font-size: 16px; color: #6a80b0; }
+    .rating-list { background: rgba(12,20,40,0.4); backdrop-filter: blur(12px); border-radius: 28px; padding: 10px 16px; border: 1px solid rgba(80,160,255,0.04); margin-bottom: 8px; }
+    .rating-list .rating-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid rgba(80,160,255,0.02); color: #b7ccff; font-size: 13px; }
+    .rating-list .rating-item:last-child { border-bottom: none; }
+    .rating-list .rating-item .pos { color: #4f7eff; font-weight: 700; min-width: 30px; }
+    .rating-list .rating-item .rname { flex: 1; margin-left: 8px; }
+    .rating-list .rating-item .rstars { color: #f5c542; font-weight: 700; }
+    .rating-list .empty { color: #3d4e7a; text-align: center; padding: 12px 0; }
+    @media (max-width: 420px) { .cases-grid { gap: 8px; } .case-card .case-icon-img { height: 60px; width: 60px; } .case-card .case-name { font-size: 15px; } .case-page .case-title { font-size: 20px; } .case-page .case-title .icon-img { height: 60px; width: 60px; } .main-prize .prize-lottie { width: 60px; height: 60px; } .slot-machine .spin-text { font-size: 26px; } .header h1 { font-size: 18px; } .star-icon { height: 14px; width: 14px; } .star-icon-sm { height: 12px; width: 12px; } .bottom-nav button { font-size: 10px; padding: 6px 0; } .profile-header .profile-stars { font-size: 20px; } }
+  </style>
+</head>
+<body>
+
+<!-- МОДАЛКА ВХОДА -->
+<div class="login-overlay" id="loginOverlay">
+  <div class="login-box">
+    <h1>🌌 Horizon</h1>
+    <div class="sub">Введите ваш игровой ник</div>
+    <input type="text" id="loginInput" placeholder="Например: Horizon_Pro" maxlength="20">
+    <div class="error" id="loginError"></div>
+    <button id="loginBtn">🚀 Войти</button>
+  </div>
+</div>
+
+<div class="app" id="app">
+
+  <div class="header">
+    <h1 id="adminTrigger">Horizon Case</h1>
+    <div class="player-name">👤 <span id="playerNameDisplay">—</span></div>
+    <div class="stars">
+      <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon">
+      <span id="headerStars">0</span>
+    </div>
+  </div>
+
+  <div class="balance-row">
+    <div class="stars-big">
+      <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon">
+      <span id="balanceStars">0</span>
+      <span>звёзд</span>
+    </div>
+  </div>
+
+  <!-- ГЛАВНАЯ -->
+  <div class="tab active" id="tab-main">
+    <div class="cases-grid" id="casesGrid"></div>
+  </div>
+
+  <!-- СТРАНИЦА КЕЙСА -->
+  <div class="case-page" id="casePage">
+    <button class="back-btn" id="backBtn">← Назад</button>
+    <div class="case-title">
+      <img src="https://i.postimg.cc/vT3r42RD/1788588183135-fotor-bg-remover-2026090511346.png" alt="Promo Case" class="icon-img" id="casePageIcon">
+      <span id="casePageName">Promo Case</span>
+    </div>
+
+    <div class="promo-area" id="promoArea">
+      <input type="text" id="promoInput" placeholder="Введите промокод" maxlength="20">
+      <button class="promo-btn" id="promoBtn">Активировать</button>
+      <div class="promo-status" id="promoStatus"></div>
+    </div>
+
+    <div class="slot-machine" id="slotMachine">
+      <div class="spin-text" id="spinText">
+        <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon"> +0
+      </div>
+      <div class="spin-sub" id="spinSub">Нажмите «Открыть»</div>
+      <div class="spin-rarity" id="spinRarity"></div>
+    </div>
+
+    <button class="open-btn" id="openBtn" disabled>🎁 Открыть</button>
+
+    <div class="main-prize">
+      <div>
+        <div class="label">🏆 Главный приз</div>
+        <div class="prize-lottie" id="mainPrizeLottie"></div>
+      </div>
+      <div class="prize-stars">
+        <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon-sm">
+        <span id="mainPrizeStarsRight">0</span>
+      </div>
+    </div>
+
+    <div class="prizes-list" id="prizesList"></div>
+  </div>
+
+  <!-- ПРОФИЛЬ + РЕЙТИНГ -->
+  <div class="tab" id="tab-profile">
+    <div class="profile-header">
+      <div class="profile-stars">
+        <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon">
+        <span id="profileStars">0</span>
+        <span>звёзд заработано</span>
+      </div>
+    </div>
+
+    <div class="profile-tabs">
+      <button class="active" data-profile-tab="profile-info">Профиль</button>
+      <button class="disabled" data-profile-tab="history">История</button>
+      <button class="active" data-profile-tab="rating" id="ratingTabBtn">🏆 Рейтинг</button>
+    </div>
+
+    <div id="profileContent">
+      <!-- Профиль (информация) -->
+      <div id="profileInfo">
+        <div class="profile-rank">
+          Вы на <span id="playerRank">—</span> месте
+        </div>
+        <div class="profile-prizes" id="profilePrizes">
+          <div class="empty">Не найдено нераспределённых подарков</div>
+        </div>
+      </div>
+
+      <!-- Рейтинг -->
+      <div id="ratingContent" style="display:none;">
+        <div class="rating-list" id="ratingList">
+          <div class="empty">Загрузка рейтинга...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- АДМИН-ПАНЕЛЬ -->
+  <div class="admin-panel" id="adminPanel">
+    <h3>🔐 АДМИН-ПАНЕЛЬ</h3>
+    <div class="admin-row">
+      <label>👤 Ник</label>
+      <input type="text" id="adminPlayer" placeholder="Игрок" value="">
+      <button id="adminSetSelf" class="admin-success">Я</button>
+    </div>
+    <div class="admin-row">
+      <label>🎁 Приз</label>
+      <select id="adminPrizeSelect" style="flex:1; background:rgba(0,0,0,0.3); border:1px solid rgba(80,160,255,0.04); border-radius:40px; padding:6px 14px; color:#e8edff; font-size:13px; outline:none; font-family:inherit;">
+        <option value="50">50 звёзд</option>
+        <option value="30">30 звёзд</option>
+        <option value="20">20 звёзд</option>
+        <option value="10">10 звёзд</option>
+      </select>
+    </div>
+    <div class="admin-row">
+      <button id="adminGivePrize" class="admin-success">💰 Выдать приз</button>
+    </div>
+    <div class="admin-status" id="adminStatus"></div>
+  </div>
+
+  <!-- ЗАГЛУШКИ -->
+  <div class="tab" id="tab-tasks"><div class="placeholder"><span class="big-icon">📋</span><div>Задания временно недоступны</div></div></div>
+  <div class="tab" id="tab-crash"><div class="placeholder"><span class="big-icon">💥</span><div>Краш временно недоступен</div></div></div>
+  <div class="tab" id="tab-pvp"><div class="placeholder"><span class="big-icon">⚔️</span><div>PVP временно недоступен</div></div></div>
+  <div class="tab" id="tab-modes"><div class="placeholder"><span class="big-icon">🎮</span><div>Режимы временно недоступны</div></div></div>
+
+  <div class="bottom-nav" id="bottomNav">
+    <button class="active" data-tab="main">Главная</button>
+    <button data-tab="tasks">Задания</button>
+    <button data-tab="crash">Краш</button>
+    <button data-tab="pvp">PVP</button>
+    <button data-tab="modes">Режимы</button>
+    <button data-tab="profile">Профиль</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
+
+<script>
+  // ============================================================
+  //  SUPABASE
+  // ============================================================
+  const SUPABASE_URL = 'https://tjhlfhdihyctygvrobnh.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_B3HSyRqK3ggGkfeLZbZCbA_FMt-Ra5A';
+
+  // ============================================================
+  //  ОСТАЛЬНЫЕ ДАННЫЕ
+  // ============================================================
+  const LOTTIE_URL = '001.min.json';
+  const RARITIES = [
+    { id: 'common', label: 'Обычный', color: '#6a8aaf', weight: 45 },
+    { id: 'uncommon', label: 'Необычный', color: '#5abf6a', weight: 30 },
+    { id: 'rare', label: 'Редкий', color: '#3a8aff', weight: 15 },
+    { id: 'epic', label: 'Эпический', color: '#b06af0', weight: 7 },
+    { id: 'legendary', label: 'Легендарный', color: '#f0a030', weight: 2.5 },
+    { id: 'mythic', label: 'Мифический', color: '#ff4060', weight: 0.5 }
+  ];
+  const CASES = [
+    { id: 'promo', name: 'Promo Case', icon: 'https://i.postimg.cc/vT3r42RD/1788588183135-fotor-bg-remover-2026090511346.png', price: 0, promo: true }
+  ];
+  const PRIZES = [
+    { name: '50 звёзд', stars: 50 },
+    { name: '30 звёзд', stars: 30 },
+    { name: '20 звёзд', stars: 20 },
+    { name: '10 звёзд', stars: 10 }
+  ];
+
+  // ============================================================
+  //  STATE
+  // ============================================================
+  let state = {
+    balance: 0,
+    totalEarned: 0,
+    opened: 0,
+    history: [],
+    bestWin: 0,
+    usedPromoCodes: [],
+    mainPrizeClaimed: false,
+    playerName: ''
+  };
+
+  let currentCase = null;
+  let isSpinning = false;
+  let pendingWin = null;
+  let currentPromoActivated = false;
+  let lottiePrizeInstance = null;
+
+  // ============================================================
+  //  ВХОД
+  // ============================================================
+  const loginOverlay = document.getElementById('loginOverlay');
+  const loginInput = document.getElementById('loginInput');
+  const loginBtn = document.getElementById('loginBtn');
+  const loginError = document.getElementById('loginError');
+  const playerNameDisplay = document.getElementById('playerNameDisplay');
+
+  function getPlayerName() {
+    try { return localStorage.getItem('horizonPlayerName') || ''; } catch { return ''; }
+  }
+  function setPlayerName(name) {
+    try { localStorage.setItem('horizonPlayerName', name.trim()); } catch {}
+  }
+  function hideLogin() {
+    loginOverlay.classList.add('hidden');
+    playerNameDisplay.textContent = state.playerName;
+  }
+  function showLogin() {
+    loginOverlay.classList.remove('hidden');
+    loginInput.value = '';
+    loginError.textContent = '';
+    setTimeout(() => loginInput.focus(), 100);
+  }
+  async function handleLogin() {
+    const name = loginInput.value.trim();
+    if (name.length < 2) { loginError.textContent = '❌ Минимум 2 символа'; return; }
+    if (name.length > 20) { loginError.textContent = '❌ Максимум 20 символов'; return; }
+    if (!/^[a-zA-Z0-9_а-яА-Я\-]+$/.test(name)) { loginError.textContent = '❌ Только буквы, цифры, _ и -'; return; }
+
+    state.playerName = name;
+    setPlayerName(name);
+    hideLogin();
+
+    await loadPlayerData();
+    await updateUI();
+  }
+  loginBtn.addEventListener('click', handleLogin);
+  loginInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') handleLogin(); });
+
+  // ============================================================
+  //  SUPABASE — ЗАПРОСЫ
+  // ============================================================
+  async function supabaseFetch(endpoint, options = {}) {
+    const url = `${SUPABASE_URL}/rest/v1/${endpoint}`;
+    const headers = {
+      'apikey': SUPABASE_KEY,
+      'Authorization': `Bearer ${SUPABASE_KEY}`,
+      'Content-Type': 'application/json'
+    };
+    const res = await fetch(url, { ...options, headers });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  async function loadPlayerData() {
+    if (!state.playerName) return;
+    try {
+      const data = await supabaseFetch(`players?name=eq.${encodeURIComponent(state.playerName)}`);
+      if (data && data.length > 0) {
+        const p = data[0];
+        state.balance = p.stars ?? 0;
+        state.totalEarned = p.total_earned ?? 0;
+        state.opened = p.opened ?? 0;
+        state.bestWin = p.best_win ?? 0;
+        state.mainPrizeClaimed = p.main_prize_claimed ?? false;
+      } else {
+        const newPlayer = {
+          name: state.playerName,
+          stars: 0,
+          total_earned: 0,
+          opened: 0,
+          best_win: 0,
+          main_prize_claimed: false
+        };
+        await supabaseFetch('players', {
+          method: 'POST',
+          body: JSON.stringify(newPlayer)
+        });
+        state.balance = 0;
+        state.totalEarned = 0;
+        state.opened = 0;
+        state.bestWin = 0;
+        state.mainPrizeClaimed = false;
+      }
+      await updateUI();
+    } catch (e) {
+      console.error('Ошибка загрузки игрока:', e);
+      loginError.textContent = '❌ Ошибка подключения к базе';
+    }
+  }
+
+  async function savePlayerData() {
+    if (!state.playerName) return;
+    try {
+      const data = await supabaseFetch(`players?name=eq.${encodeURIComponent(state.playerName)}`);
+      if (data && data.length > 0) {
+        const id = data[0].id;
+        await supabaseFetch(`players?id=eq.${id}`, {
+          method: 'PATCH',
+          body: JSON.stringify({
+            stars: state.balance,
+            total_earned: state.totalEarned,
+            opened: state.opened,
+            best_win: state.bestWin,
+            main_prize_claimed: state.mainPrizeClaimed
+          })
+        });
+      }
+    } catch (e) {
+      console.error('Ошибка сохранения:', e);
+    }
+  }
+
+  async function loadRating() {
+    try {
+      const data = await supabaseFetch('players?order=stars.desc&limit=10&select=name,stars');
+      return data;
+    } catch (e) {
+      console.error('Ошибка загрузки рейтинга:', e);
+      return [];
+    }
+  }
+
+  async function getPlayerRank(name) {
+    try {
+      const all = await supabaseFetch('players?select=name,stars&order=stars.desc');
+      const idx = all.findIndex(p => p.name.toLowerCase() === name.toLowerCase());
+      return idx !== -1 ? idx + 1 : '—';
+    } catch { return '—'; }
+  }
+
+  // ============================================================
+  //  LOTTIE
+  // ============================================================
+  function initLottie(containerId, loop = true, autoplay = true) {
+    const container = document.getElementById(containerId);
+    if (!container) return null;
+    container.innerHTML = '';
+    try {
+      const anim = lottie.loadAnimation({
+        container: container,
+        renderer: 'svg',
+        loop: loop,
+        autoplay: autoplay,
+        path: LOTTIE_URL
+      });
+      return anim;
+    } catch (e) {
+      console.warn('Lottie error:', e);
+      return null;
+    }
+  }
+  function destroyLottie(instance) { if (instance) instance.destroy(); }
+
+  // ============================================================
+  //  ИГРОВАЯ ЛОГИКА
+  // ============================================================
+  function randomWin() {
+    const amount = Math.floor(Math.random() * 16) + 5;
+    let totalWeight = 0;
+    const weighted = RARITIES.map(r => { totalWeight += r.weight; return r; });
+    let roll = Math.random() * totalWeight;
+    let chosen = weighted[0];
+    for (const r of weighted) {
+      roll -= r.weight;
+      if (roll <= 0) { chosen = r; break; }
+    }
+    return { amount, rarity: chosen };
+  }
+
+  function setSlotResult(main, sub, rarity, color) {
+    document.getElementById('spinText').innerHTML = main;
+    document.getElementById('spinSub').textContent = sub || '';
+    document.getElementById('spinRarity').textContent = rarity || '';
+    document.getElementById('spinRarity').className = 'spin-rarity';
+    if (color) {
+      document.getElementById('slotMachine').style.borderColor = color;
+      setTimeout(() => { document.getElementById('slotMachine').style.borderColor = 'rgba(60,140,255,0.04)'; }, 800);
+    }
+  }
+
+  async function startSpin() {
+    if (isSpinning) return;
+    if (!currentCase) return;
+
+    if (currentCase.promo) {
+      if (!currentPromoActivated) {
+        setSlotResult('🔑', 'Активируйте промокод!', '', '#f5c542');
+        return;
+      }
+    }
+
+    const win = randomWin();
+    pendingWin = win;
+
+    isSpinning = true;
+    const slot = document.getElementById('slotMachine');
+    slot.classList.add('spinning');
+
+    document.getElementById('openBtn').disabled = true;
+    document.getElementById('promoBtn').disabled = true;
+
+    let count = 0;
+    const interval = setInterval(() => {
+      const fake = Math.floor(Math.random() * 20) + 1;
+      document.getElementById('spinText').innerHTML = `
+        <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon"> +${fake}
+      `;
+      document.getElementById('spinSub').textContent = '···';
+      document.getElementById('spinRarity').textContent = '';
+      count++;
+      if (count > 12) {
+        clearInterval(interval);
+        slot.classList.remove('spinning');
+        isSpinning = false;
+
+        state.balance += pendingWin.amount;
+        state.totalEarned += pendingWin.amount;
+        state.opened += 1;
+        if (pendingWin.amount > state.bestWin) state.bestWin = pendingWin.amount;
+
+        state.history.unshift({
+          amount: pendingWin.amount,
+          rarity: pendingWin.rarity.id,
+          label: pendingWin.rarity.label,
+          case: currentCase.name
+        });
+        if (state.history.length > 50) state.history.pop();
+
+        await savePlayerData();
+        await updateUI();
+
+        const rarityClass = 'rarity-' + pendingWin.rarity.id;
+        document.getElementById('spinText').innerHTML = `
+          <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon"> +${pendingWin.amount}
+        `;
+        document.getElementById('spinSub').textContent = 'Выпало!';
+        document.getElementById('spinRarity').textContent = pendingWin.rarity.label;
+        document.getElementById('spinRarity').className = 'spin-rarity ' + rarityClass;
+        slot.style.borderColor = pendingWin.rarity.color;
+        setTimeout(() => { slot.style.borderColor = 'rgba(60,140,255,0.04)'; }, 800);
+
+        document.getElementById('openBtn').disabled = false;
+        document.getElementById('promoBtn').disabled = false;
+
+        if (currentCase.promo) {
+          currentPromoActivated = false;
+          document.getElementById('openBtn').disabled = true;
+          document.getElementById('promoStatus').textContent = '✅ Кейс открыт. Введите новый промокод';
+          document.getElementById('promoStatus').className = 'promo-status success';
+          document.getElementById('promoInput').value = '';
+          document.getElementById('promoInput').disabled = false;
+          document.getElementById('promoBtn').disabled = false;
+        }
+
+        pendingWin = null;
+      }
+    }, 70);
+  }
+
+  function activatePromo() {
+    const code = document.getElementById('promoInput').value.trim().toUpperCase();
+    if (!code) {
+      document.getElementById('promoStatus').textContent = '❌ Введите промокод';
+      document.getElementById('promoStatus').className = 'promo-status error';
+      return;
+    }
+    if (state.usedPromoCodes.includes(code)) {
+      document.getElementById('promoStatus').textContent = '❌ Этот промокод уже использован!';
+      document.getElementById('promoStatus').className = 'promo-status error';
+      return;
+    }
+    const validCodes = ['EASY2026', 'HORIZON777', 'VIPCASE', 'WELCOME'];
+    if (!validCodes.includes(code)) {
+      document.getElementById('promoStatus').textContent = '❌ Неверный промокод!';
+      document.getElementById('promoStatus').className = 'promo-status error';
+      return;
+    }
+    state.usedPromoCodes.push(code);
+    currentPromoActivated = true;
+    savePlayerData();
+
+    document.getElementById('promoStatus').textContent = '✅ Промокод активирован! Нажмите «Открыть»';
+    document.getElementById('promoStatus').className = 'promo-status success';
+    document.getElementById('openBtn').disabled = false;
+    document.getElementById('promoInput').disabled = true;
+    document.getElementById('promoBtn').disabled = true;
+    setSlotResult('🎉', 'Промокод активирован!', '', '#5abf6a');
+  }
+
+  // ============================================================
+  //  АДМИН
+  // ============================================================
+  let adminClicks = 0, adminTimer = null;
+  document.getElementById('adminTrigger').addEventListener('click', function() {
+    adminClicks++;
+    clearTimeout(adminTimer);
+    adminTimer = setTimeout(() => { adminClicks = 0; }, 800);
+    if (adminClicks >= 2) {
+      adminClicks = 0;
+      document.getElementById('adminPanel').classList.toggle('open');
+      if (document.getElementById('adminPanel').classList.contains('open')) {
+        document.getElementById('adminStatus').textContent = '';
+        document.getElementById('adminStatus').className = 'admin-status';
+        document.getElementById('adminPlayer').value = state.playerName;
+      }
+    }
+  });
+
+  document.getElementById('adminSetSelf').addEventListener('click', function() {
+    document.getElementById('adminPlayer').value = state.playerName;
+    document.getElementById('adminStatus').textContent = '✅ Установлен текущий игрок';
+    document.getElementById('adminStatus').className = 'admin-status success';
+  });
+
+  document.getElementById('adminGivePrize').addEventListener('click', async function() {
+    const name = document.getElementById('adminPlayer').value.trim();
+    const prizeValue = parseInt(document.getElementById('adminPrizeSelect').value);
+    if (!name) {
+      document.getElementById('adminStatus').textContent = '❌ Введите ник игрока';
+      document.getElementById('adminStatus').className = 'admin-status error';
+      return;
+    }
+    try {
+      const data = await supabaseFetch(`players?name=eq.${encodeURIComponent(name)}`);
+      if (!data || data.length === 0) {
+        document.getElementById('adminStatus').textContent = '❌ Игрок не найден';
+        document.getElementById('adminStatus').className = 'admin-status error';
+        return;
+      }
+      const id = data[0].id;
+      const currentStars = data[0].stars || 0;
+      const currentTotal = data[0].total_earned || 0;
+      await supabaseFetch(`players?id=eq.${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          stars: currentStars + prizeValue,
+          total_earned: currentTotal + prizeValue
+        })
+      });
+      if (name.toLowerCase() === state.playerName.toLowerCase()) {
+        state.balance += prizeValue;
+        state.totalEarned += prizeValue;
+        await updateUI();
+      }
+      document.getElementById('adminStatus').textContent = `✅ Игроку ${name} выдано ${prizeValue} звёзд`;
+      document.getElementById('adminStatus').className = 'admin-status success';
+    } catch (e) {
+      document.getElementById('adminStatus').textContent = '❌ Ошибка: ' + e.message;
+      document.getElementById('adminStatus').className = 'admin-status error';
+    }
+  });
+
+  // ============================================================
+  //  UI
+  // ============================================================
+  async function updateUI() {
+    document.getElementById('headerStars').textContent = Math.floor(state.balance);
+    document.getElementById('balanceStars').textContent = Math.floor(state.balance);
+    if (state.playerName) {
+      playerNameDisplay.textContent = state.playerName;
+    }
+    renderCases();
+    await renderProfile();
+  }
+
+  function renderCases() {
+    const grid = document.getElementById('casesGrid');
+    grid.innerHTML = '';
+    CASES.forEach(c => {
+      const card = document.createElement('div');
+      card.className = 'case-card';
+      card.innerHTML = `
+        <span class="promo-badge">Промо</span>
+        <img src="${c.icon}" alt="${c.name}" class="case-icon-img">
+        <div class="case-name">${c.name}</div>
+        <div class="case-price">
+          <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon-sm"> ${c.price}
+        </div>
+      `;
+      card.addEventListener('click', () => openCasePage(c.id));
+      grid.appendChild(card);
+    });
+  }
+
+  async function renderProfile() {
+    const starsEl = document.getElementById('profileStars');
+    starsEl.textContent = state.totalEarned;
+
+    const rank = await getPlayerRank(state.playerName);
+    document.getElementById('playerRank').textContent = rank;
+
+    const container = document.getElementById('profilePrizes');
+    if (state.totalEarned >= 50 && state.mainPrizeClaimed) {
+      container.innerHTML = `
+        <div class="prize-item"><span class="icon">🏆</span><span class="name">Главный приз (50 звёзд)</span><span class="stars">⭐ 50</span></div>
+        <div class="prize-item"><span class="icon">🎁</span><span class="name">Остальные призы</span><span class="stars">⭐ ${Math.floor(state.totalEarned - 50)}</span></div>
+      `;
+    } else {
+      container.innerHTML = `<div class="empty">Не найдено нераспределённых подарков</div>`;
+    }
+
+    await renderRating();
+  }
+
+  async function renderRating() {
+    const list = document.getElementById('ratingList');
+    const data = await loadRating();
+    if (!data || data.length === 0) {
+      list.innerHTML = `<div class="empty">Пока нет игроков</div>`;
+      return;
+    }
+    let html = '';
+    data.forEach((p, i) => {
+      const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `#${i+1}`;
+      const isMe = p.name.toLowerCase() === state.playerName.toLowerCase();
+      html += `
+        <div class="rating-item" style="${isMe ? 'border-color: rgba(79,126,255,0.2); background: rgba(26,45,74,0.3);' : ''}">
+          <span class="pos">${medal}</span>
+          <span class="rname">${p.name} ${isMe ? '⭐' : ''}</span>
+          <span class="rstars">⭐ ${p.stars}</span>
+        </div>
+      `;
+    });
+    list.innerHTML = html;
+  }
+
+  document.querySelectorAll('[data-profile-tab]').forEach(btn => {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('[data-profile-tab]').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+      const tab = this.dataset.profileTab;
+      if (tab === 'rating') {
+        document.getElementById('profileInfo').style.display = 'none';
+        document.getElementById('ratingContent').style.display = 'block';
+        renderRating();
+      } else {
+        document.getElementById('profileInfo').style.display = 'block';
+        document.getElementById('ratingContent').style.display = 'none';
+      }
+    });
+  });
+
+  // ============================================================
+  //  СТРАНИЦА КЕЙСА
+  // ============================================================
+  function openCasePage(caseId) {
+    currentCase = CASES.find(c => c.id === caseId);
+    if (!currentCase) return;
+
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('casePage').classList.add('active');
+
+    document.getElementById('casePageIcon').src = currentCase.icon;
+    document.getElementById('casePageName').textContent = currentCase.name;
+
+    destroyLottie(lottiePrizeInstance);
+    setTimeout(() => {
+      lottiePrizeInstance = initLottie('mainPrizeLottie', true, true);
+    }, 100);
+
+    const promoArea = document.getElementById('promoArea');
+    promoArea.style.display = 'flex';
+    document.getElementById('promoInput').disabled = false;
+    document.getElementById('promoInput').value = '';
+    document.getElementById('promoBtn').disabled = false;
+    document.getElementById('promoStatus').textContent = '';
+    document.getElementById('promoStatus').className = 'promo-status';
+    document.getElementById('openBtn').disabled = true;
+    currentPromoActivated = false;
+
+    const mainPrize = PRIZES[0];
+    document.getElementById('mainPrizeStarsRight').textContent = mainPrize.stars;
+
+    const list = document.getElementById('prizesList');
+    list.innerHTML = '';
+    PRIZES.slice(1).forEach(p => {
+      const row = document.createElement('div');
+      row.className = 'prize-row';
+      row.innerHTML = `
+        <span class="p-name">🎁 ${p.name}</span>
+        <span class="p-stars">
+          <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon-sm"> ${p.stars}
+        </span>
+      `;
+      list.appendChild(row);
+    });
+
+    document.getElementById('spinText').innerHTML = `
+      <img src="https://i.postimg.cc/V6tZb84Y/optimize-fotor-bg-remover-20260905105812.png" alt="⭐" class="star-icon"> +0
+    `;
+    document.getElementById('spinSub').textContent = 'Нажмите «Открыть»';
+    document.getElementById('spinRarity').textContent = '';
+    document.getElementById('spinRarity').className = 'spin-rarity';
+    document.getElementById('slotMachine').style.borderColor = 'rgba(60,140,255,0.04)';
+
+    document.querySelectorAll('#bottomNav button').forEach(b => b.classList.remove('active'));
+  }
+
+  function goToMain() {
+    document.getElementById('casePage').classList.remove('active');
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById('tab-main').classList.add('active');
+    document.querySelectorAll('#bottomNav button').forEach(b => b.classList.remove('active'));
+    document.querySelector('#bottomNav button[data-tab="main"]').classList.add('active');
+    updateUI();
+  }
+
+  // ============================================================
+  //  EVENTS
+  // ============================================================
+  document.getElementById('backBtn').addEventListener('click', goToMain);
+  document.getElementById('openBtn').addEventListener('click', startSpin);
+  document.getElementById('promoBtn').addEventListener('click', activatePromo);
+  document.getElementById('promoInput').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') activatePromo();
+  });
+
+  document.querySelectorAll('#bottomNav button').forEach(btn => {
+    btn.addEventListener('click', function() {
+      const tabId = this.dataset.tab;
+      if (tabId === 'main') { goToMain(); return; }
+      document.getElementById('casePage').classList.remove('active');
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      document.getElementById('tab-' + tabId).classList.add('active');
+      document.querySelectorAll('#bottomNav button').forEach(b => b.classList.remove('active'));
+      this.classList.add('active');
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if ((e.key === ' ' || e.key === 'Space') && document.getElementById('casePage').classList.contains('active')) {
+      e.preventDefault();
+      startSpin();
+    }
+  });
+
+  // ============================================================
+  //  СТАРТ
+  // ============================================================
+  (async function init() {
+    const savedName = getPlayerName();
+    if (savedName) {
+      state.playerName = savedName;
+      hideLogin();
+      await loadPlayerData();
+      await updateUI();
+    } else {
+      showLogin();
+    }
+    console.log('🌌 Horizon Case с Supabase загружен');
+    console.log('🔑 Промокоды: EASY2026, HORIZON777, VIPCASE, WELCOME');
+  })();
+</script>
+</body>
+</html>
